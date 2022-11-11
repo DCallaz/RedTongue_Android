@@ -14,14 +14,17 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.tabs.TabLayout;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.Toolbar;
 import androidx.viewpager.widget.ViewPager;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.provider.MediaStore;
+import android.text.InputType;
 import android.text.method.ScrollingMovementMethod;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -53,6 +56,8 @@ public class MainActivity extends AppCompatActivity implements UI {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Toolbar myToolBar = (Toolbar) findViewById(R.id.my_toolbar);
+        setSupportActionBar(myToolBar);
         SectionsPagerAdapter sectionsPagerAdapter = new SectionsPagerAdapter(this, getSupportFragmentManager(), this);
         ViewPager viewPager = findViewById(R.id.view_pager);
         viewPager.setAdapter(sectionsPagerAdapter);
@@ -79,6 +84,47 @@ public class MainActivity extends AppCompatActivity implements UI {
             onActivityResult(FilesFragment.REQUEST_FILE, 0, intent);
         }
         activity = this;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inf = getMenuInflater();
+        inf.inflate(R.menu.menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.setting_loc:
+                //TODO
+                return true;
+            case R.id.setting_name:
+                final Context c = this;
+                final EditText input = new EditText(c);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Dialog.showInputDialog("Change default", "Enter a new name", c, input, InputType.TYPE_CLASS_TEXT, lock);
+                    }
+                });
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        synchronized (lock) {
+                            try {
+                                lock.wait();
+                            } catch (InterruptedException e) {}
+                        }
+                        red.updateName(input.getText().toString());
+                    }
+                });
+                t.start();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     public static Activity getActivity() {
@@ -384,7 +430,7 @@ public class MainActivity extends AppCompatActivity implements UI {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                Dialog.showInputDialog("Enter pair number", message, c, input, lock);
+                Dialog.showInputDialog("Enter pair number", message, c, input, InputType.TYPE_CLASS_TEXT | InputType.TYPE_CLASS_NUMBER, lock);
             }
         });
 
@@ -431,7 +477,7 @@ public class MainActivity extends AppCompatActivity implements UI {
                     FilesFragment.selected[i] = source;
                     selectText += FilesFragment.selected[i].getName()+", ";
                 }
-                selectText.substring(0, selectText.length()-3);
+                selectText = selectText.substring(0, selectText.length()-3);
             } else {
                 FilesFragment.selected = new File[1];
                 Uri uri = data.getData();

@@ -3,6 +3,7 @@ package com.example.redtongue;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.renderscript.ScriptGroup;
 import android.text.InputType;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -23,11 +24,11 @@ public class Dialog {
         alertDialog.show();
     }
 
-    public static void showInputDialog(String title, String message, Context appContext, EditText input, final Object lock) {
+    public static void showInputDialog(String title, String message, Context appContext, EditText input, int input_type, final Object lock) {
         AlertDialog.Builder builder = new AlertDialog.Builder(appContext);
         builder.setTitle(title);
 
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_CLASS_NUMBER);
+        input.setInputType(input_type);
         builder.setView(input);
 
         builder.setMessage(message)
