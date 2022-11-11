@@ -1,5 +1,6 @@
 package com.example.redtongue;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -29,6 +30,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.redtongue.ui.main.SectionsPagerAdapter;
 
@@ -38,6 +40,7 @@ import java.io.File;
 
 public class MainActivity extends AppCompatActivity implements UI {
 
+    public static Activity activity;
     private static final Object lock = new Object();
     public boolean amode;
     private Mode mode;
@@ -75,6 +78,11 @@ public class MainActivity extends AppCompatActivity implements UI {
             selectPrint = new TextView(getApplicationContext());
             onActivityResult(FilesFragment.REQUEST_FILE, 0, intent);
         }
+        activity = this;
+    }
+
+    public static Activity getActivity() {
+        return activity;
     }
 
     public void changeMode(Mode mode) {

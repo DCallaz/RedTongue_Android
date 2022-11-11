@@ -1,5 +1,14 @@
 package com.example.redtongue;
 
+import android.Manifest;
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+
 import java.io.RandomAccessFile;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,18 +41,25 @@ public class FileTransfer {
       } else {
         file = new File(file, fname);
       }
-			//open file for write
-			try {
-        if (file.exists()) {
-          file.delete();
-        }
-				//Files.deleteIfExists(file.toPath());
-        file.mkdirs();
-        file.createNewFile();
-        this.f = new RandomAccessFile(file, "rw");
-			} catch (IOException e) {
-				e.printStackTrace();
+		//open file for write
+		System.out.println(file);
+		try {
+			if (file.exists()) {
+			  file.delete();
 			}
+					//Files.deleteIfExists(file.toPath());
+			file.getParentFile().mkdirs();
+			file.createNewFile();
+			this.f = new RandomAccessFile(file, "rw");
+		} catch (IOException e) {
+			final String file_name = file.toString();
+			MainActivity.getActivity().runOnUiThread(new Runnable() {
+				public void run() {
+					Toast.makeText(MainActivity.getActivity(), "Unable to save to location: "+file_name, Toast.LENGTH_LONG).show();
+				}
+			});
+			e.printStackTrace();
+		}
 		}
 	}
 
@@ -97,7 +113,14 @@ public class FileTransfer {
 	}
 
   public static TCP getTCP(boolean send_recv) {
-    return new TCP(send_recv, null, 8199);
+	TCP t;
+	if (send_recv == TCP.SEND) {
+		t = new TCP(null, 8199);
+	} else {
+		t = new TCP(8199);
+		t.connect();
+	}
+    return t;
   }
 
 	public static void main(String[] args) {

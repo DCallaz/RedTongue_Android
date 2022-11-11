@@ -1,5 +1,7 @@
 package com.example.redtongue;
 
+import android.widget.ExpandableListAdapter;
+
 import java.net.*;
 import java.io.*;
 import java.nio.*;
@@ -13,34 +15,77 @@ public class TCP {
 	private Socket sock;
 	private DataInputStream in;
 	private DataOutputStream out;
+	private boolean setup_complete;
 
-	public TCP(boolean send_recv, String host, int port) {
-		this.mode = send_recv;
+	/**
+	 * Sender constructor. Constructs a sender TCP object for transfer. Once this constructor returns,
+	 * the full sender object is ready.
+	 * @param host: The hostname of the device to connect to.
+	 * @param port: The port of the device to connect to.
+	 */
+	public TCP(String host, int port) {
+		this.setup_complete = false;
+		this.mode = SEND;
 		if (host == null) {
 			host = "localhost";
 		}
-		if (mode == SEND) {
-			try {
-				sock = new Socket(host, port);
-        sock.setReuseAddress(true);
-			} catch (IOException e) {
-				System.out.println("Unable to open sender socket: "+e);
-			}
-		} else {
-			try {
-				serv = new ServerSocket(port);
-        serv.setReuseAddress(true);
-				sock = serv.accept();
-        sock.setReuseAddress(true);
-			} catch (IOException e) {
-				System.out.println("Unable to open server (receiver) socket. "+e);
-			}
+		try {
+			sock = new Socket(host, port);
+			sock.setReuseAddress(true);
+		} catch (IOException e) {
+			System.out.println("Unable to open sender socket: "+e);
 		}
+		setIO();
+		this.setup_complete = true;
+	}
+
+	/**
+	 * Receiver constructor. Constructs a receiver TCP object for transfer.
+	 * NOTE: The <code>connect()</code> method must be called after this constructor to complete the
+	 * setup for the receiver.
+	 * @param port: The port for the connection.
+	 */
+	public TCP(int port) {
+		this.setup_complete = false;
+		this.mode = RECV;
+		try {
+			serv = new ServerSocket(port);
+			serv.setReuseAddress(true);
+		} catch (IOException e) {
+			System.out.println("Unable to open server (receiver) socket. "+e);
+			e.printStackTrace();
+		}
+		System.out.println("Created new receiver object");
+	}
+
+	/**
+	 * Constructs the IO objects. Will be called either from the sender constructor or after a connection
+	 * has been accepted in the receiver's <code>connect()</code> method.
+	 */
+	private void setIO() {
 		try {
 			in = new DataInputStream(sock.getInputStream());
 			out = new DataOutputStream(sock.getOutputStream());
 		} catch (IOException e) {
 			System.out.println("Could not start readers and writers");
+		}
+	}
+
+	/**
+	 * Blocks for a connection to be established between this object and a sender TCP object. Once a
+	 * connection is established, setup of the IO objects is done.
+	 */
+	public void connect() {
+		try {
+			sock = serv.accept();
+			sock.setReuseAddress(true);
+			setIO();
+			this.setup_complete = true;
+		} catch (SocketException e) {
+			System.out.println("Got socket exception while blocking for receive: "+e);
+		} catch (IOException e) {
+			System.out.println("Unable to open server (receiver) socket. "+e);
+			e.printStackTrace();
 		}
 	}
 
@@ -54,6 +99,9 @@ public class TCP {
 	public void send(byte[] bytes, int length, Progress prog, int chunk) throws Exception {
 		if (this.mode != SEND) {
 			throw new Exception("Incompatible mode, receiver can't run send");
+		}
+		if (!setup_complete) {
+			throw new Exception("TCP sender not fully setup before call to send!");
 		}
 		int size = (length == -1) ? bytes.length : length;
 		int index = 0;
@@ -77,6 +125,9 @@ public class TCP {
 	public byte[] recv(Progress prog) throws Exception {
 		if (this.mode != RECV) {
 			throw new Exception("Incompatible mode, sender can't run receive");
+		}
+		if (!setup_complete) {
+			throw new Exception("TCP receiver not fully setup before call to send!");
 		}
 		int size = in.readInt();
 		int chunk = in.readInt();
@@ -149,7 +200,9 @@ public class TCP {
       if (serv != null) {
         serv.close();
       }
-      sock.close();
+      if (sock != null) {
+		  sock.close();
+	  }
     } catch (IOException e) {
       System.out.println("Could not close sockets");
     }
@@ -162,7 +215,13 @@ public class TCP {
 		}
 		int modei = Integer.parseInt(args[0]);
 		boolean mode = (modei == 0) ? RECV : SEND;
-		TCP t = new TCP(mode, null, 8199);
+		TCP t;
+		if (mode == SEND) {
+			t = new TCP(null, 8199);
+		} else {
+			t = new TCP(8199);
+			t.connect();
+		}
 		try {
 			if (mode == SEND) {
 				if (args.length > 1) {

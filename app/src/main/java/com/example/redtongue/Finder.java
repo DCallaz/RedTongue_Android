@@ -61,6 +61,9 @@ public class Finder {
 
   public void close() {
     sock.close();
+    if (mine != null) {
+      mine.close();
+    }
   }
 
   public void search() {

@@ -14,7 +14,9 @@ public class Host {
   }
 
   public void close() {
-    t.close();
+    if (t != null) {
+      t.close();
+    }
   }
 
   public void setPort(int port) {
@@ -22,7 +24,12 @@ public class Host {
   }
 
   public void enableTCP(boolean send_recv) {
-    t = new TCP(send_recv, IP.getHostAddress(), port);
+    if (send_recv == TCP.SEND) {
+      t = new TCP(IP.getHostAddress(), port);
+    } else {
+      t = new TCP(port);
+      t.connect();
+    }
     if (port == 0) {
       port = t.getPort();
     }
